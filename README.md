@@ -53,12 +53,32 @@ Columns not mentioned in the transform pass through unchanged. `--transform`
 can be used on its own, without `--schema`, to just rename/coerce and
 report rows that fail coercion.
 
+Passing `--load-db` writes each valid row into a DuckDB database, after any
+`--transform` and `--schema` steps have run:
+
+```bash
+uv run csv2duck path/to/data.csv --schema path/to/schema.json --load-db path/to/warehouse.duckdb
+```
+
+The table is named after the CSV file's stem by default (`data` for
+`data.csv`), or you can give it an explicit name with `--table`:
+
+```bash
+uv run csv2duck path/to/data.csv --load-db path/to/warehouse.duckdb --table people
+```
+
+Column types in the table are inferred from the loaded values, so pairing
+`--load-db` with `--schema` or `--transform` produces typed columns instead
+of text. Running the same load again replaces the table rather than
+appending to it, so repeated runs stay idempotent. Rows that fail
+`--schema` validation are skipped, not loaded.
+
 ## Status
 
 Early and under active development. Currently reports row counts for a
 given CSV file, applies column renames and type coercion via `--transform`,
-and validates rows against a pydantic-backed schema. A DuckDB load step is
-in progress.
+validates rows against a pydantic-backed schema, and loads the result into
+DuckDB via `--load-db`.
 
 ## Development
 
