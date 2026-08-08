@@ -30,11 +30,35 @@ are required unless `"required": false` is set. Rows that fail validation
 are reported with their line number, and the command exits non-zero if any
 row is invalid.
 
+Passing `--transform` renames columns and/or coerces their values before
+validation:
+
+```bash
+uv run csv2duck path/to/data.csv --transform path/to/transform.json --schema path/to/schema.json
+```
+
+A transform file lists source columns and, optionally, a new name and/or
+type to coerce the value to:
+
+```json
+{
+  "columns": [
+    { "source": "full_name", "target": "name" },
+    { "source": "yrs", "target": "age", "type": "integer" }
+  ]
+}
+```
+
+Columns not mentioned in the transform pass through unchanged. `--transform`
+can be used on its own, without `--schema`, to just rename/coerce and
+report rows that fail coercion.
+
 ## Status
 
 Early and under active development. Currently reports row counts for a
-given CSV file and validates rows against a pydantic-backed schema.
-Transforms and a DuckDB load step are in progress.
+given CSV file, applies column renames and type coercion via `--transform`,
+and validates rows against a pydantic-backed schema. A DuckDB load step is
+in progress.
 
 ## Development
 
