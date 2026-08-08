@@ -1,6 +1,5 @@
 import csv
 from pathlib import Path
-from typing import Optional
 
 import typer
 from pydantic import ValidationError
@@ -14,13 +13,13 @@ app = typer.Typer(help="Validate, transform, and load CSV/JSON data into DuckDB.
 @app.command()
 def ingest(
     path: Path,
-    schema: Optional[Path] = typer.Option(
+    schema: Path | None = typer.Option(
         None,
         "--schema",
         help="Path to a JSON schema file describing the expected columns. "
         "When given, rows are validated instead of just counted.",
     ),
-    transform: Optional[Path] = typer.Option(
+    transform: Path | None = typer.Option(
         None,
         "--transform",
         help="Path to a JSON transform spec describing column renames and "
