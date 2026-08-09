@@ -73,12 +73,26 @@ of text. Running the same load again replaces the table rather than
 appending to it, so repeated runs stay idempotent. Rows that fail
 `--schema` validation are skipped, not loaded.
 
+## JSON input
+
+A `.json` or `.jsonl` file can be used anywhere a CSV file can, and goes
+through the same `--transform`, `--schema`, and `--load-db` steps:
+
+```bash
+uv run csv2duck path/to/data.json --schema path/to/schema.json
+```
+
+Either a JSON array of objects or newline-delimited JSON (one object per
+line) is accepted, detected automatically from the file's contents. Since
+JSON input has no header row, validation errors are reported by record
+number instead of line number.
+
 ## Status
 
 Early and under active development. Currently reports row counts for a
-given CSV file, applies column renames and type coercion via `--transform`,
-validates rows against a pydantic-backed schema, and loads the result into
-DuckDB via `--load-db`.
+given CSV or JSON file, applies column renames and type coercion via
+`--transform`, validates rows against a pydantic-backed schema, and loads
+the result into DuckDB via `--load-db`.
 
 ## Development
 
