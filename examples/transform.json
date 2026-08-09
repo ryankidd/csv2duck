@@ -1,0 +1,6 @@
+{
+  "columns": [
+    { "source": "full_name", "target": "name" },
+    { "source": "yrs", "target": "age", "type": "integer" }
+  ]
+}
