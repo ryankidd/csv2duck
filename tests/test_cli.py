@@ -203,6 +203,102 @@ def test_ingest_with_load_db_skips_invalid_rows(tmp_path):
     assert rows == [("bob", 25)]
 
 
+def test_ingest_reports_row_count_for_json(tmp_path):
+    json_path = tmp_path / "sample.json"
+    json_path.write_text(
+        json.dumps([{"name": "alice", "age": 30}, {"name": "bob", "age": 25}])
+    )
+
+    result = runner.invoke(app, [str(json_path)])
+
+    assert result.exit_code == 0
+    assert "2 rows" in result.stdout
+
+
+def test_ingest_with_schema_reports_valid_rows_for_json_array(tmp_path):
+    json_path = tmp_path / "sample.json"
+    json_path.write_text(
+        json.dumps([{"name": "alice", "age": 30}, {"name": "bob", "age": 25}])
+    )
+    schema_path = _write_schema(
+        tmp_path,
+        [{"name": "name", "type": "string"}, {"name": "age", "type": "integer"}],
+    )
+
+    result = runner.invoke(app, [str(json_path), "--schema", str(schema_path)])
+
+    assert result.exit_code == 0
+    assert "2 valid rows, 0 invalid" in result.stdout
+
+
+def test_ingest_with_schema_reports_invalid_rows_for_ndjson(tmp_path):
+    json_path = tmp_path / "sample.json"
+    json_path.write_text(
+        '{"name": "alice", "age": "thirty"}\n{"name": "bob", "age": 25}\n'
+    )
+    schema_path = _write_schema(
+        tmp_path,
+        [{"name": "name", "type": "string"}, {"name": "age", "type": "integer"}],
+    )
+
+    result = runner.invoke(app, [str(json_path), "--schema", str(schema_path)])
+
+    assert result.exit_code == 1
+    assert "1 valid rows, 1 invalid" in result.stdout
+    assert "record 1" in result.stdout
+
+
+def test_ingest_with_transform_renames_json_columns_before_validation(tmp_path):
+    json_path = tmp_path / "sample.json"
+    json_path.write_text(
+        json.dumps([{"full_name": "alice", "yrs": 30}, {"full_name": "bob", "yrs": 25}])
+    )
+    transform_path = _write_transform(
+        tmp_path,
+        [
+            {"source": "full_name", "target": "name"},
+            {"source": "yrs", "target": "age", "type": "integer"},
+        ],
+    )
+    schema_path = _write_schema(
+        tmp_path,
+        [{"name": "name", "type": "string"}, {"name": "age", "type": "integer"}],
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            str(json_path),
+            "--transform",
+            str(transform_path),
+            "--schema",
+            str(schema_path),
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert "2 valid rows, 0 invalid" in result.stdout
+
+
+def test_ingest_with_load_db_writes_json_rows_to_default_table(tmp_path):
+    json_path = tmp_path / "people.json"
+    json_path.write_text(
+        json.dumps([{"name": "alice", "age": 30}, {"name": "bob", "age": 25}])
+    )
+    db_path = tmp_path / "out.duckdb"
+
+    result = runner.invoke(app, [str(json_path), "--load-db", str(db_path)])
+
+    assert result.exit_code == 0
+    assert "loaded 2 rows" in result.stdout
+    con = duckdb.connect(str(db_path))
+    try:
+        rows = con.execute("SELECT name, age FROM people ORDER BY name").fetchall()
+    finally:
+        con.close()
+    assert rows == [("alice", 30), ("bob", 25)]
+
+
 def test_ingest_with_load_db_rerun_replaces_table(tmp_path):
     csv_path = tmp_path / "people.csv"
     csv_path.write_text("name,age\nalice,30\n")
